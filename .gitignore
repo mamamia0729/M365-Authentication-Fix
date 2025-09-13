@@ -1,0 +1,70 @@
+# Microsoft 365 Authentication Fix - Git Ignore File
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Log files
+*.log
+*.evtx
+
+# PowerShell temporary files
+*.ps1xml
+
+# Diagnostic reports
+*-Diagnostics.html
+*-ValidationReport.html
+*-HealthReport.html
+
+# Backup files
+*.backup
+*.bak
+
+# Configuration files with sensitive data
+config.json
+secrets.json
+credentials.xml
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Directory for temporary test files
+temp/
+test-output/
+logs/
+
+# IDE files
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# Personal notes
+NOTES.md
+TODO.md
+personal-*
+
+# Output directories
+output/
+reports/
+export/
+
+# PowerShell execution policy bypass files
+*.ps1-bypass
+
+# Test user data
+test-users.csv
+test-data.*
+
+# Local environment configuration
+.env
+local.config
+
+# Backup directories
+backup/
+backups/

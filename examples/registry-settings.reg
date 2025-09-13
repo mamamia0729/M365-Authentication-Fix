@@ -1,0 +1,108 @@
+Windows Registry Editor Version 5.00
+
+; Microsoft 365 Authentication Fix - Registry Settings
+; This file contains the necessary registry entries to enable seamless
+; authentication between on-premises Active Directory and Microsoft 365
+
+; ============================================================================
+; OFFICE MODERN AUTHENTICATION SETTINGS
+; ============================================================================
+
+; Enable Modern Authentication (ADAL) for Office 2016/2019/365
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\16.0\Common\Identity]
+"EnableADAL"=dword:00000001
+"Version"=dword:00000001
+
+; Enable Modern Authentication for Office 2013 (if installed)
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\15.0\Common\Identity]
+"EnableADAL"=dword:00000001
+
+; ============================================================================
+; INTERNET EXPLORER TRUSTED SITES CONFIGURATION
+; ============================================================================
+
+; Add Azure AD login endpoints to trusted sites (Zone 1 = Intranet)
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\microsoftonline.com\login]
+"https"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\windows.net\login]  
+"https"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\live.com\login]
+"https"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\office365.com\portal]
+"https"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\activedirectory.windowsazure.com\account]
+"https"=dword:00000001
+
+; ============================================================================
+; INTERNET EXPLORER SECURITY SETTINGS
+; ============================================================================
+
+; Allow automatic logon with current username and password (for Intranet zone)
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\1]
+"1A00"=dword:00000000
+
+; Enable Integrated Windows Authentication for trusted sites
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings]
+"EnableNegotiate"=dword:00000001
+
+; ============================================================================
+; USER-SPECIFIC SETTINGS (OPTIONAL)
+; These can be applied per-user or through Group Policy Preferences
+; ============================================================================
+
+; User-level Office authentication (optional - can supplement machine settings)
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Office\16.0\Common\Identity]
+"EnableADAL"=dword:00000001
+
+; User-level trusted sites (optional - machine-level settings take precedence)
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\microsoftonline.com\login]
+"https"=dword:00000001
+
+; ============================================================================
+; ADDITIONAL OFFICE SETTINGS
+; ============================================================================
+
+; Disable legacy authentication prompts in Office
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\16.0\Common\SignIn]
+"SignInOptions"=dword:00000003
+
+; Configure Office to use system authentication
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\16.0\Common\Internet]
+"UseOnlineContent"=dword:00000002
+
+; ============================================================================
+; BROWSER COMPATIBILITY SETTINGS
+; ============================================================================
+
+; Edge WebView2 compatibility for modern authentication
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\16.0\Common\Identity\Profiles]
+"EnableADALForAllApps"=dword:00000001
+
+; Disable Internet Explorer Enhanced Security for Office authentication
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}]
+"IsInstalled"=dword:00000000
+
+; ============================================================================
+; TROUBLESHOOTING SETTINGS (OPTIONAL)
+; ============================================================================
+
+; Enable detailed authentication logging (for troubleshooting only)
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\16.0\Common\Logging]
+"EnableLogging"=dword:00000001
+"LogLevel"=dword:00000001
+
+; Clear any cached authentication failures
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\16.0\Common\Identity]
+"DisableADALWAM"=dword:00000000
+
+; ============================================================================
+; NOTES:
+; - Restart required for some settings to take effect
+; - Test thoroughly in non-production environment first
+; - Some settings may require Group Policy deployment for enterprise use
+; - User-level settings (HKEY_CURRENT_USER) should be deployed per-user
+; ============================================================================
