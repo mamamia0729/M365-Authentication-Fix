@@ -2,27 +2,27 @@
 
 <#
 .SYNOPSIS
-    Validation Script for M365 Authentication Configuration
+    Validation Script for M365 Authentication Configuration (PowerShell 5.1 Compatible)
 
 .DESCRIPTION
     Tests and validates that M365 authentication is working correctly after
-    applying the fix. Checks SSO functionality and generates a test report.
+    applying the fix. Compatible with PowerShell 5.1.
 
 .PARAMETER TestAllComponents
     Runs comprehensive tests on all authentication components
 
 .PARAMETER GenerateReport
-    Creates an HTML report of test results
+    Creates a text report of test results
 
 .PARAMETER QuickTest
     Runs only essential authentication tests
 
 .EXAMPLE
-    .\validate-setup.ps1 -TestAllComponents -GenerateReport
+    .\validate-setup-ps51.ps1 -TestAllComponents -GenerateReport
 
 .NOTES
-    Author: Your Name
-    Version: 1.0
+    Author: Thinh Le
+    Version: 1.0 (PowerShell 5.1 Compatible)
     Requires: PowerShell 5.1+
 #>
 
@@ -30,7 +30,7 @@ param(
     [switch]$TestAllComponents,
     [switch]$GenerateReport,
     [switch]$QuickTest,
-    [string]$ReportPath = "C:\Temp\M365-ValidationReport.html"
+    [string]$ReportPath = "C:\Temp\M365-ValidationReport.txt"
 )
 
 # Initialize test results
@@ -55,11 +55,11 @@ function Write-ValidationMessage {
     param([string]$Message, [string]$Type = "Info")
     $timestamp = Get-Date -Format "HH:mm:ss"
     switch ($Type) {
-        "Error" { Write-Host "[$timestamp] ❌ ERROR: $Message" -ForegroundColor Red }
-        "Warning" { Write-Host "[$timestamp] ⚠️  WARNING: $Message" -ForegroundColor Yellow }
-        "Success" { Write-Host "[$timestamp] ✅ SUCCESS: $Message" -ForegroundColor Green }
-        "Test" { Write-Host "[$timestamp] 🧪 TEST: $Message" -ForegroundColor Cyan }
-        default { Write-Host "[$timestamp] ℹ️  INFO: $Message" -ForegroundColor White }
+        "Error" { Write-Host "[$timestamp] ERROR: $Message" -ForegroundColor Red }
+        "Warning" { Write-Host "[$timestamp] WARNING: $Message" -ForegroundColor Yellow }
+        "Success" { Write-Host "[$timestamp] SUCCESS: $Message" -ForegroundColor Green }
+        "Test" { Write-Host "[$timestamp] TEST: $Message" -ForegroundColor Cyan }
+        default { Write-Host "[$timestamp] INFO: $Message" -ForegroundColor White }
     }
 }
 
@@ -105,19 +105,19 @@ function Test-RegistryConfiguration {
                 $actualValue = (Get-ItemProperty -Path $testInfo.Path -Name $testInfo.Name -ErrorAction SilentlyContinue).$($testInfo.Name)
                 
                 if ($actualValue -eq $testInfo.ExpectedValue) {
-                    Write-ValidationMessage "✅ $($testInfo.Description): PASS" "Success"
+                    Write-ValidationMessage "PASS: $($testInfo.Description)" "Success"
                     $testsPassed++
                     $TestResults.TestSummary.Passed++
                     $status = "PASS"
                 }
                 else {
                     if ($testInfo.Optional) {
-                        Write-ValidationMessage "⚠️  $($testInfo.Description): OPTIONAL - Expected $($testInfo.ExpectedValue), Got $actualValue" "Warning"
+                        Write-ValidationMessage "OPTIONAL: $($testInfo.Description) - Expected $($testInfo.ExpectedValue), Got $actualValue" "Warning"
                         $TestResults.TestSummary.Warnings++
                         $status = "WARNING"
                     }
                     else {
-                        Write-ValidationMessage "❌ $($testInfo.Description): FAIL - Expected $($testInfo.ExpectedValue), Got $actualValue" "Error"
+                        Write-ValidationMessage "FAIL: $($testInfo.Description) - Expected $($testInfo.ExpectedValue), Got $actualValue" "Error"
                         $TestResults.TestSummary.Failed++
                         $status = "FAIL"
                     }
@@ -125,12 +125,12 @@ function Test-RegistryConfiguration {
             }
             else {
                 if ($testInfo.Optional) {
-                    Write-ValidationMessage "⚠️  $($testInfo.Description): OPTIONAL - Registry path not found" "Warning"
+                    Write-ValidationMessage "OPTIONAL: $($testInfo.Description) - Registry path not found" "Warning"
                     $TestResults.TestSummary.Warnings++
                     $status = "WARNING"
                 }
                 else {
-                    Write-ValidationMessage "❌ $($testInfo.Description): FAIL - Registry path not found" "Error"
+                    Write-ValidationMessage "FAIL: $($testInfo.Description) - Registry path not found" "Error"
                     $TestResults.TestSummary.Failed++
                     $status = "FAIL"
                 }
@@ -147,7 +147,7 @@ function Test-RegistryConfiguration {
             }
         }
         catch {
-            Write-ValidationMessage "❌ $($testInfo.Description): ERROR - $($_.Exception.Message)" "Error"
+            Write-ValidationMessage "ERROR: $($testInfo.Description) - $($_.Exception.Message)" "Error"
             $TestResults.TestSummary.Failed++
             $TestResults.RegistryTests[$testName] = @{
                 Description = $testInfo.Description
@@ -180,18 +180,18 @@ function Test-NetworkConnectivity {
             $result = Test-NetConnection -ComputerName $endpoint.URL -Port $endpoint.Port -InformationLevel Quiet -WarningAction SilentlyContinue
             
             if ($result) {
-                Write-ValidationMessage "✅ $($endpoint.Description): Connected" "Success"
+                Write-ValidationMessage "PASS: $($endpoint.Description) - Connected" "Success"
                 $TestResults.TestSummary.Passed++
                 $status = "PASS"
             }
             else {
                 if ($endpoint.Critical) {
-                    Write-ValidationMessage "❌ $($endpoint.Description): Connection failed" "Error"
+                    Write-ValidationMessage "FAIL: $($endpoint.Description) - Connection failed" "Error"
                     $TestResults.TestSummary.Failed++
                     $status = "FAIL"
                 }
                 else {
-                    Write-ValidationMessage "⚠️  $($endpoint.Description): Connection failed (non-critical)" "Warning"
+                    Write-ValidationMessage "WARNING: $($endpoint.Description) - Connection failed (non-critical)" "Warning"
                     $TestResults.TestSummary.Warnings++
                     $status = "WARNING"
                 }
@@ -206,7 +206,7 @@ function Test-NetworkConnectivity {
             }
         }
         catch {
-            Write-ValidationMessage "❌ $($endpoint.Description): ERROR - $($_.Exception.Message)" "Error"
+            Write-ValidationMessage "ERROR: $($endpoint.Description) - $($_.Exception.Message)" "Error"
             $TestResults.TestSummary.Failed++
             $TestResults.NetworkTests[$endpoint.URL] = @{
                 Description = $endpoint.Description
@@ -238,12 +238,12 @@ function Test-OfficeConfiguration {
     }
     
     if ($officeVersions.Count -gt 0) {
-        Write-ValidationMessage "✅ Office installations found: $($officeVersions -join ', ')" "Success"
+        Write-ValidationMessage "PASS: Office installations found - $($officeVersions -join ', ')" "Success"
         $TestResults.OfficeTests.InstallationStatus = "Installed"
         $TestResults.OfficeTests.Versions = $officeVersions
     }
     else {
-        Write-ValidationMessage "⚠️  No Office installations detected" "Warning"
+        Write-ValidationMessage "WARNING: No Office installations detected" "Warning"
         $TestResults.OfficeTests.InstallationStatus = "Not Found"
         return
     }
@@ -256,18 +256,18 @@ function Test-OfficeConfiguration {
         $enableADAL = (Get-ItemProperty -Path $office365Path -Name "EnableADAL" -ErrorAction SilentlyContinue).EnableADAL
         
         if ($enableADAL -eq 1) {
-            Write-ValidationMessage "✅ Office Modern Authentication: Enabled" "Success"
+            Write-ValidationMessage "PASS: Office Modern Authentication - Enabled" "Success"
             $TestResults.TestSummary.Passed++
             $TestResults.OfficeTests.ModernAuthStatus = "Enabled"
         }
         else {
-            Write-ValidationMessage "❌ Office Modern Authentication: Disabled or not configured" "Error"
+            Write-ValidationMessage "FAIL: Office Modern Authentication - Disabled or not configured" "Error"
             $TestResults.TestSummary.Failed++
             $TestResults.OfficeTests.ModernAuthStatus = "Disabled"
         }
     }
     else {
-        Write-ValidationMessage "❌ Office authentication registry not found" "Error"
+        Write-ValidationMessage "FAIL: Office authentication registry not found" "Error"
         $TestResults.TestSummary.Failed++
         $TestResults.OfficeTests.ModernAuthStatus = "Not Configured"
     }
@@ -283,7 +283,7 @@ function Test-DomainAuthentication {
         $domain = Get-CimInstance -ClassName Win32_ComputerSystem
         
         if ($domain.PartOfDomain) {
-            Write-ValidationMessage "✅ Computer is domain-joined: $($domain.Domain)" "Success"
+            Write-ValidationMessage "PASS: Computer is domain-joined - $($domain.Domain)" "Success"
             $TestResults.TestSummary.Passed++
             $TestResults.AuthenticationTests.DomainStatus = "Joined"
             $TestResults.AuthenticationTests.DomainName = $domain.Domain
@@ -292,12 +292,12 @@ function Test-DomainAuthentication {
             $TestResults.TestSummary.Total++
             $dcTest = nltest /dsgetdc:$domain.Domain 2>$null
             if ($LASTEXITCODE -eq 0) {
-                Write-ValidationMessage "✅ Domain controller connectivity: OK" "Success"
+                Write-ValidationMessage "PASS: Domain controller connectivity - OK" "Success"
                 $TestResults.TestSummary.Passed++
                 $TestResults.AuthenticationTests.DCConnectivity = "OK"
             }
             else {
-                Write-ValidationMessage "❌ Domain controller connectivity: Failed" "Error"
+                Write-ValidationMessage "FAIL: Domain controller connectivity - Failed" "Error"
                 $TestResults.TestSummary.Failed++
                 $TestResults.AuthenticationTests.DCConnectivity = "Failed"
             }
@@ -306,24 +306,24 @@ function Test-DomainAuthentication {
             $TestResults.TestSummary.Total++
             $upn = whoami /upn 2>$null
             if ($LASTEXITCODE -eq 0 -and $upn) {
-                Write-ValidationMessage "✅ User UPN: $upn" "Success"
+                Write-ValidationMessage "PASS: User UPN - $upn" "Success"
                 $TestResults.TestSummary.Passed++
                 $TestResults.AuthenticationTests.UserUPN = $upn
             }
             else {
-                Write-ValidationMessage "⚠️  User UPN: Not available or not configured" "Warning"
+                Write-ValidationMessage "WARNING: User UPN - Not available or not configured" "Warning"
                 $TestResults.TestSummary.Warnings++
                 $TestResults.AuthenticationTests.UserUPN = "Not Available"
             }
         }
         else {
-            Write-ValidationMessage "❌ Computer is not domain-joined" "Error"
+            Write-ValidationMessage "FAIL: Computer is not domain-joined" "Error"
             $TestResults.TestSummary.Failed++
             $TestResults.AuthenticationTests.DomainStatus = "Not Joined"
         }
     }
     catch {
-        Write-ValidationMessage "❌ Domain authentication test failed: $($_.Exception.Message)" "Error"
+        Write-ValidationMessage "ERROR: Domain authentication test failed - $($_.Exception.Message)" "Error"
         $TestResults.TestSummary.Failed++
         $TestResults.AuthenticationTests.DomainStatus = "Error"
         $TestResults.AuthenticationTests.Error = $_.Exception.Message
@@ -392,30 +392,34 @@ function Export-ValidationReport {
     Write-ValidationMessage "Generating validation report..." "Info"
     
     try {
-        # Create simple HTML report compatible with PowerShell 5.1
-        $htmlContent = "<!DOCTYPE html><html><head><title>M365 Authentication Validation Report</title></head><body>"
-        $htmlContent += "<h1>Microsoft 365 Authentication Validation Report</h1>"
-        $htmlContent += "<p>Generated: $($TestResults.Timestamp.ToString('yyyy-MM-dd HH:mm:ss'))</p>"
-        $htmlContent += "<p>Computer: $($env:COMPUTERNAME)</p>"
-        $htmlContent += "<h2>Overall Status: $($TestResults.OverallStatus)</h2>"
-        $htmlContent += "<h3>Test Summary</h3>"
-        $htmlContent += "<ul><li>Total Tests: $($TestResults.TestSummary.Total)</li>"
-        $htmlContent += "<li>Passed: $($TestResults.TestSummary.Passed)</li>"
-        $htmlContent += "<li>Failed: $($TestResults.TestSummary.Failed)</li>"
-        $htmlContent += "<li>Warnings: $($TestResults.TestSummary.Warnings)</li></ul>"
-        $htmlContent += "<h3>Registry Tests</h3><table border='1'><tr><th>Test</th><th>Status</th></tr>"
-        
+        $reportContent = @()
+        $reportContent += "======================================================"
+        $reportContent += "Microsoft 365 Authentication Validation Report"
+        $reportContent += "======================================================"
+        $reportContent += "Generated: $($TestResults.Timestamp.ToString('yyyy-MM-dd HH:mm:ss'))"
+        $reportContent += "Computer: $($env:COMPUTERNAME)"
+        $reportContent += ""
+        $reportContent += "OVERALL STATUS: $($TestResults.OverallStatus)"
+        $reportContent += ""
+        $reportContent += "TEST SUMMARY:"
+        $reportContent += "Total Tests: $($TestResults.TestSummary.Total)"
+        $reportContent += "Passed: $($TestResults.TestSummary.Passed)"
+        $reportContent += "Failed: $($TestResults.TestSummary.Failed)"
+        $reportContent += "Warnings: $($TestResults.TestSummary.Warnings)"
+        $reportContent += ""
+        $reportContent += "REGISTRY TESTS:"
         foreach ($test in $TestResults.RegistryTests.GetEnumerator()) {
-            $htmlContent += "<tr><td>$($test.Value.Description)</td><td>$($test.Value.Status)</td></tr>"
+            $reportContent += "$($test.Value.Description): $($test.Value.Status)"
         }
-        
-        $htmlContent += "</table><h3>Recommendations</h3><ul>"
+        $reportContent += ""
+        $reportContent += "RECOMMENDATIONS:"
         foreach ($rec in $TestResults.Recommendations) {
-            $htmlContent += "<li>$rec</li>"
+            $reportContent += "- $rec"
         }
-        $htmlContent += "</ul></body></html>"
+        $reportContent += ""
+        $reportContent += "======================================================"
         
-        $htmlContent | Out-File -FilePath $ReportPath -Encoding UTF8
+        $reportContent | Out-File -FilePath $ReportPath -Encoding UTF8
         Write-ValidationMessage "Validation report generated: $ReportPath" "Success"
     }
     catch {
@@ -425,8 +429,8 @@ function Export-ValidationReport {
 
 # Main execution
 function Main {
-    Write-Host "🔐 Microsoft 365 Authentication Validation" -ForegroundColor Cyan
-    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host "Microsoft 365 Authentication Validation (PowerShell 5.1)" -ForegroundColor Cyan
+    Write-Host "========================================================" -ForegroundColor Cyan
     
     # Gather computer info
     $TestResults.ComputerInfo = @{
@@ -450,8 +454,9 @@ function Main {
     Set-OverallStatus
     
     # Display summary
-    Write-Host "`n📊 Validation Summary:" -ForegroundColor Yellow
-    Write-Host "=====================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Validation Summary:" -ForegroundColor Yellow
+    Write-Host "==================" -ForegroundColor Yellow
     Write-Host "Overall Status: $($TestResults.OverallStatus)" -ForegroundColor $(
         switch($TestResults.OverallStatus) {
             "EXCELLENT" { "Green" }
@@ -466,9 +471,10 @@ function Main {
     Write-Host "Warnings: $($TestResults.TestSummary.Warnings)" -ForegroundColor $(if($TestResults.TestSummary.Warnings -eq 0){"Green"}else{"Yellow"})
     
     if ($TestResults.Recommendations.Count -gt 0) {
-        Write-Host "`n🎯 Recommendations:" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Recommendations:" -ForegroundColor Yellow
         foreach ($rec in $TestResults.Recommendations) {
-            Write-Host "  • $rec" -ForegroundColor Yellow
+            Write-Host "  - $rec" -ForegroundColor Yellow
         }
     }
     
